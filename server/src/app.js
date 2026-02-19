@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -15,6 +16,9 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Auth Routes
+app.use('/api/auth', authRoutes);
 
 // Root Route (optional, just to show something)
 app.get('/', (req, res) => {

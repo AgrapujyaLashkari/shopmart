@@ -172,7 +172,7 @@ router.get('/me', async (req, res) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret');
-      
+
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: {

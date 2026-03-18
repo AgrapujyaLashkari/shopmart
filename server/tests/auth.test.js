@@ -1,7 +1,7 @@
 /**
  * Backend API Tests for Auth Routes
  * Testing Library: Jest + Supertest
- * 
+ *
  * These tests verify the auth API endpoints work correctly.
  * Uses mocked Prisma client to avoid database dependencies.
  */
@@ -51,9 +51,7 @@ describe('Auth API Tests', () => {
         createdAt: new Date()
       });
 
-      const res = await request(app)
-        .post('/api/auth/signup')
-        .send(validSignupData);
+      const res = await request(app).post('/api/auth/signup').send(validSignupData);
 
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
@@ -62,9 +60,7 @@ describe('Auth API Tests', () => {
     });
 
     it('should return 400 if email is missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/signup')
-        .send({ password: 'password123' });
+      const res = await request(app).post('/api/auth/signup').send({ password: 'password123' });
 
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
@@ -72,9 +68,7 @@ describe('Auth API Tests', () => {
     });
 
     it('should return 400 if password is missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/signup')
-        .send({ email: 'test@example.com' });
+      const res = await request(app).post('/api/auth/signup').send({ email: 'test@example.com' });
 
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
@@ -104,9 +98,7 @@ describe('Auth API Tests', () => {
         email: validSignupData.email
       });
 
-      const res = await request(app)
-        .post('/api/auth/signup')
-        .send(validSignupData);
+      const res = await request(app).post('/api/auth/signup').send(validSignupData);
 
       expect(res.statusCode).toBe(409);
       expect(res.body.message).toBe('User with this email already exists');
@@ -131,9 +123,7 @@ describe('Auth API Tests', () => {
       prisma.user.findUnique.mockResolvedValue(mockUser);
       bcrypt.compare.mockResolvedValue(true);
 
-      const res = await request(app)
-        .post('/api/auth/login')
-        .send(validLoginData);
+      const res = await request(app).post('/api/auth/login').send(validLoginData);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
@@ -142,18 +132,14 @@ describe('Auth API Tests', () => {
     });
 
     it('should return 400 if email is missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/login')
-        .send({ password: 'password123' });
+      const res = await request(app).post('/api/auth/login').send({ password: 'password123' });
 
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
     });
 
     it('should return 400 if password is missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/login')
-        .send({ email: 'test@example.com' });
+      const res = await request(app).post('/api/auth/login').send({ email: 'test@example.com' });
 
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
@@ -185,17 +171,14 @@ describe('Auth API Tests', () => {
 
   describe('GET /api/auth/me', () => {
     it('should return 401 if no token provided', async () => {
-      const res = await request(app)
-        .get('/api/auth/me');
+      const res = await request(app).get('/api/auth/me');
 
       expect(res.statusCode).toBe(401);
       expect(res.body.message).toBe('No token provided');
     });
 
     it('should return 401 if invalid token format', async () => {
-      const res = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', 'InvalidToken');
+      const res = await request(app).get('/api/auth/me').set('Authorization', 'InvalidToken');
 
       expect(res.statusCode).toBe(401);
       expect(res.body.message).toBe('No token provided');

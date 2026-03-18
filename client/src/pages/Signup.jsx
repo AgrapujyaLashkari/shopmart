@@ -46,7 +46,7 @@ function Signup() {
       formData.firstName,
       formData.lastName
     );
-    
+
     if (result.success) {
       navigate('/');
     } else {
@@ -59,7 +59,11 @@ function Signup() {
     <div className="auth-container">
       <div className="auth-card">
         <h2>Create an Account</h2>
-        {error && <div className="error-message" role="alert">{error}</div>}
+        {error && (
+          <div className="error-message" role="alert">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} data-testid="signup-form">
           <div className="form-row">
             <div className="form-group">
@@ -131,9 +135,9 @@ function Signup() {
               data-testid="confirm-password-input"
             />
           </div>
-          <button 
-            type="submit" 
-            className="auth-button" 
+          <button
+            type="submit"
+            className="auth-button"
             disabled={loading}
             data-testid="signup-button"
           >

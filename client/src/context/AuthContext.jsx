@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -17,15 +17,13 @@ export const AuthProvider = ({ children }) => {
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
 
-  useEffect(() => {
-    if (token) {
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+  }, []);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       const response = await fetch(`${apiUrl}/api/auth/me`, {
         headers: {
@@ -44,7 +42,15 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiUrl, token, logout]);
+
+  useEffect(() => {
+    if (token) {
+      fetchUser();
+    } else {
+      setLoading(false);
+    }
+  }, [token, fetchUser]);
 
   const signup = async (email, password, firstName, lastName) => {
     try {
@@ -56,7 +62,7 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password, firstName, lastName })
       });
       const data = await response.json();
-      
+
       if (data.success) {
         localStorage.setItem('token', data.data.token);
         setToken(data.data.token);
@@ -80,7 +86,7 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password })
       });
       const data = await response.json();
-      
+
       if (data.success) {
         localStorage.setItem('token', data.data.token);
         setToken(data.data.token);
@@ -94,12 +100,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-  };
-
   const value = {
     user,
     token,
@@ -110,11 +110,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export default AuthContext;

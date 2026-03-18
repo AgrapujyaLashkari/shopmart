@@ -16,7 +16,7 @@ function Login() {
     setLoading(true);
 
     const result = await login(email, password);
-    
+
     if (result.success) {
       navigate('/');
     } else {
@@ -29,7 +29,11 @@ function Login() {
     <div className="auth-container">
       <div className="auth-card">
         <h2>Login to ShopSmart</h2>
-        {error && <div className="error-message" role="alert">{error}</div>}
+        {error && (
+          <div className="error-message" role="alert">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} data-testid="login-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -59,9 +63,9 @@ function Login() {
               data-testid="password-input"
             />
           </div>
-          <button 
-            type="submit" 
-            className="auth-button" 
+          <button
+            type="submit"
+            className="auth-button"
             disabled={loading}
             data-testid="login-button"
           >
@@ -69,7 +73,7 @@ function Login() {
           </button>
         </form>
         <p className="auth-link">
-          Don't have an account? <Link to="/signup">Sign up</Link>
+          Don&apos;t have an account? <Link to="/signup">Sign up</Link>
         </p>
       </div>
     </div>

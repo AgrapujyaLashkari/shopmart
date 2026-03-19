@@ -1,6 +1,6 @@
 /**
  * MSW (Mock Service Worker) Handlers
- * 
+ *
  * These handlers mock the backend API endpoints for integration testing.
  * Uses mock data to simulate real API responses.
  */
@@ -33,6 +33,29 @@ export const validCredentials = {
   'jane@example.com': 'password456'
 };
 
+export const mockProducts = [
+  {
+    id: 'p-101',
+    name: 'Wireless Headphones',
+    category: 'Audio',
+    price: 79.99,
+    rating: 4.5,
+    stock: 24,
+    image: 'https://example.com/headphones.jpg',
+    description: 'Comfortable over-ear wireless headphones with active noise cancellation.'
+  },
+  {
+    id: 'p-102',
+    name: 'Smart Fitness Watch',
+    category: 'Wearables',
+    price: 129,
+    rating: 4.3,
+    stock: 15,
+    image: 'https://example.com/watch.jpg',
+    description: 'Track workouts and health metrics in real time.'
+  }
+];
+
 // Mock JWT token generator
 const generateMockToken = (userId, email) => {
   return `mock-jwt-token-${userId}-${email}-${Date.now()}`;
@@ -45,6 +68,36 @@ export const handlers = [
       status: 'ok',
       message: 'ShopSmart Backend is running',
       timestamp: new Date().toISOString()
+    });
+  }),
+
+  http.get('*/api/products', () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        products: mockProducts
+      }
+    });
+  }),
+
+  http.get('*/api/products/:id', ({ params }) => {
+    const product = mockProducts.find((item) => item.id === params.id);
+
+    if (!product) {
+      return HttpResponse.json(
+        {
+          success: false,
+          message: 'Product not found'
+        },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        product
+      }
     });
   }),
 
@@ -62,7 +115,7 @@ export const handlers = [
     }
 
     // Check credentials
-    const user = mockUsers.find(u => u.email === email);
+    const user = mockUsers.find((u) => u.email === email);
     const validPassword = validCredentials[email];
 
     if (!user || password !== validPassword) {
@@ -120,7 +173,7 @@ export const handlers = [
     }
 
     // Check if user already exists
-    const existingUser = mockUsers.find(u => u.email === email);
+    const existingUser = mockUsers.find((u) => u.email === email);
     if (existingUser) {
       return HttpResponse.json(
         { success: false, message: 'User with this email already exists' },
@@ -157,10 +210,7 @@ export const handlers = [
     const authHeader = request.headers.get('Authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return HttpResponse.json(
-        { success: false, message: 'No token provided' },
-        { status: 401 }
-      );
+      return HttpResponse.json({ success: false, message: 'No token provided' }, { status: 401 });
     }
 
     const token = authHeader.split(' ')[1];
@@ -176,13 +226,10 @@ export const handlers = [
     // Extract user ID from mock token
     const tokenParts = token.split('-');
     const userId = parseInt(tokenParts[3]);
-    const user = mockUsers.find(u => u.id === userId);
+    const user = mockUsers.find((u) => u.id === userId);
 
     if (!user) {
-      return HttpResponse.json(
-        { success: false, message: 'User not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }
 
     return HttpResponse.json({

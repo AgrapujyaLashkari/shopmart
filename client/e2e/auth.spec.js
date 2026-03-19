@@ -1,7 +1,7 @@
 /**
  * End-to-End Tests - Authentication User Journey
  * Testing Library: Playwright
- * 
+ *
  * These tests verify the complete user journey:
  * - User can navigate to signup page
  * - User can fill out signup form
@@ -10,7 +10,7 @@
  * - User can log out
  * - Form validation works
  * - Error messages are displayed
- * 
+ *
  * Note: These tests require the backend to be running.
  * For CI environments, you may want to use a mock server.
  */
@@ -28,13 +28,13 @@ const testUser = {
 test.describe('E2E - Navigation Tests', () => {
   test('should navigate from home to login page', async ({ page }) => {
     await page.goto('/');
-    
+
     // Wait for page to load
     await expect(page.locator('h1')).toContainText('ShopSmart');
-    
+
     // Click on login link
     await page.click('[data-testid="login-link"]');
-    
+
     // Verify we're on login page
     await expect(page).toHaveURL('/login');
     await expect(page.locator('h2')).toContainText('Login to ShopSmart');
@@ -42,10 +42,10 @@ test.describe('E2E - Navigation Tests', () => {
 
   test('should navigate from home to signup page', async ({ page }) => {
     await page.goto('/');
-    
+
     // Click on signup link
     await page.click('[data-testid="signup-link"]');
-    
+
     // Verify we're on signup page
     await expect(page).toHaveURL('/signup');
     await expect(page.locator('h2')).toContainText('Create an Account');
@@ -53,20 +53,20 @@ test.describe('E2E - Navigation Tests', () => {
 
   test('should navigate from login to signup page', async ({ page }) => {
     await page.goto('/login');
-    
+
     // Click on signup link
     await page.click('a[href="/signup"]');
-    
+
     // Verify we're on signup page
     await expect(page).toHaveURL('/signup');
   });
 
   test('should navigate from signup to login page', async ({ page }) => {
     await page.goto('/signup');
-    
+
     // Click on login link
     await page.click('a[href="/login"]');
-    
+
     // Verify we're on login page
     await expect(page).toHaveURL('/login');
   });
@@ -98,7 +98,7 @@ test.describe('E2E - Login Page Tests', () => {
   test('should show loading state when form is submitted', async ({ page }) => {
     // Mock the API to delay response
     await page.route('**/api/auth/login', async (route) => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await route.fulfill({
         status: 401,
         body: JSON.stringify({ success: false, message: 'Invalid credentials' })
@@ -185,21 +185,23 @@ test.describe('E2E - Signup Page Tests', () => {
     await page.fill('[data-testid="confirm-password-input"]', '12345');
     await page.click('[data-testid="signup-button"]');
 
-    await expect(page.locator('[role="alert"]')).toContainText('Password must be at least 6 characters long');
+    await expect(page.locator('[role="alert"]')).toContainText(
+      'Password must be at least 6 characters long'
+    );
   });
 
   test('should show loading state when form is submitted', async ({ page }) => {
     // Mock the API to delay response
     await page.route('**/api/auth/signup', async (route) => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await route.fulfill({
         status: 201,
-        body: JSON.stringify({ 
-          success: true, 
-          data: { 
-            user: { id: 1, email: 'test@example.com' }, 
-            token: 'mock-token' 
-          } 
+        body: JSON.stringify({
+          success: true,
+          data: {
+            user: { id: 1, email: 'test@example.com' },
+            token: 'mock-token'
+          }
         })
       });
     });
@@ -209,7 +211,9 @@ test.describe('E2E - Signup Page Tests', () => {
     await page.fill('[data-testid="confirm-password-input"]', 'password123');
     await page.click('[data-testid="signup-button"]');
 
-    await expect(page.locator('[data-testid="signup-button"]')).toContainText('Creating Account...');
+    await expect(page.locator('[data-testid="signup-button"]')).toContainText(
+      'Creating Account...'
+    );
     await expect(page.locator('[data-testid="signup-button"]')).toBeDisabled();
   });
 
@@ -227,7 +231,9 @@ test.describe('E2E - Signup Page Tests', () => {
     await page.fill('[data-testid="confirm-password-input"]', 'password123');
     await page.click('[data-testid="signup-button"]');
 
-    await expect(page.locator('[role="alert"]')).toContainText('User with this email already exists');
+    await expect(page.locator('[role="alert"]')).toContainText(
+      'User with this email already exists'
+    );
   });
 });
 
@@ -237,18 +243,18 @@ test.describe('E2E - Complete User Journey', () => {
     await page.route('**/api/auth/signup', async (route) => {
       await route.fulfill({
         status: 201,
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           success: true,
           message: 'User created successfully',
-          data: { 
-            user: { 
-              id: 1, 
+          data: {
+            user: {
+              id: 1,
               email: testUser.email,
               firstName: testUser.firstName,
               lastName: testUser.lastName
-            }, 
-            token: 'mock-jwt-token-1' 
-          } 
+            },
+            token: 'mock-jwt-token-1'
+          }
         })
       });
     });
@@ -291,13 +297,13 @@ test.describe('E2E - Complete User Journey', () => {
     await page.fill('[data-testid="email-input"]', testUser.email);
     await page.fill('[data-testid="password-input"]', testUser.password);
     await page.fill('[data-testid="confirm-password-input"]', testUser.password);
-    
+
     // Submit form
     await page.click('[data-testid="signup-button"]');
 
     // Should redirect to home page
     await expect(page).toHaveURL('/');
-    
+
     // Should show welcome message with user's name
     await expect(page.locator('text=Welcome')).toBeVisible();
   });
@@ -307,18 +313,18 @@ test.describe('E2E - Complete User Journey', () => {
     await page.route('**/api/auth/login', async (route) => {
       await route.fulfill({
         status: 200,
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           success: true,
           message: 'Login successful',
-          data: { 
-            user: { 
-              id: 1, 
+          data: {
+            user: {
+              id: 1,
               email: 'john@example.com',
               firstName: 'John',
               lastName: 'Doe'
-            }, 
-            token: 'mock-jwt-token-1' 
-          } 
+            },
+            token: 'mock-jwt-token-1'
+          }
         })
       });
     });
@@ -358,13 +364,13 @@ test.describe('E2E - Complete User Journey', () => {
     // Fill login form
     await page.fill('[data-testid="email-input"]', 'john@example.com');
     await page.fill('[data-testid="password-input"]', 'password123');
-    
+
     // Submit form
     await page.click('[data-testid="login-button"]');
 
     // Should redirect to home page
     await expect(page).toHaveURL('/');
-    
+
     // Should show welcome message
     await expect(page.locator('text=Welcome')).toBeVisible();
   });
@@ -408,14 +414,14 @@ test.describe('E2E - Complete User Journey', () => {
 
     // Wait for user to be loaded
     await expect(page.locator('text=Welcome')).toBeVisible();
-    
+
     // Click logout button
     await page.click('[data-testid="logout-button"]');
-    
+
     // Should show login/signup links again
     await expect(page.locator('[data-testid="login-link"]')).toBeVisible();
     await expect(page.locator('[data-testid="signup-link"]')).toBeVisible();
-    
+
     // Logout button should not be visible
     await expect(page.locator('[data-testid="logout-button"]')).not.toBeVisible();
   });
@@ -439,7 +445,7 @@ test.describe('E2E - Home Page Tests', () => {
 
     // Should show ShopSmart title
     await expect(page.locator('h1')).toContainText('ShopSmart');
-    
+
     // Should show backend status
     await expect(page.locator('text=Backend Status')).toBeVisible();
     await expect(page.locator('text=ok')).toBeVisible();
@@ -449,7 +455,7 @@ test.describe('E2E - Home Page Tests', () => {
   test('should show loading state while fetching health status', async ({ page }) => {
     // Mock slow health check
     await page.route('**/api/health', async (route) => {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await route.fulfill({
         status: 200,
         body: JSON.stringify({
@@ -470,7 +476,7 @@ test.describe('E2E - Home Page Tests', () => {
 test.describe('E2E - Button Click Tests', () => {
   test('login button fires click event', async ({ page }) => {
     let loginClicked = false;
-    
+
     await page.route('**/api/auth/login', async (route) => {
       loginClicked = true;
       await route.fulfill({
@@ -486,20 +492,20 @@ test.describe('E2E - Button Click Tests', () => {
 
     // Wait for the API call
     await page.waitForResponse('**/api/auth/login');
-    
+
     expect(loginClicked).toBe(true);
   });
 
   test('signup button fires click event', async ({ page }) => {
     let signupClicked = false;
-    
+
     await page.route('**/api/auth/signup', async (route) => {
       signupClicked = true;
       await route.fulfill({
         status: 201,
-        body: JSON.stringify({ 
-          success: true, 
-          data: { user: { id: 1 }, token: 'mock' } 
+        body: JSON.stringify({
+          success: true,
+          data: { user: { id: 1 }, token: 'mock' }
         })
       });
     });
@@ -512,7 +518,7 @@ test.describe('E2E - Button Click Tests', () => {
 
     // Wait for the API call
     await page.waitForResponse('**/api/auth/signup');
-    
+
     expect(signupClicked).toBe(true);
   });
 });

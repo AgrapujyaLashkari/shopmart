@@ -1,7 +1,7 @@
 /**
  * Integration Tests for Auth Flow
  * Testing Library: Vitest + React Testing Library + MSW
- * 
+ *
  * These tests verify:
  * - API integration with mock data
  * - Complete login flow with backend
@@ -12,10 +12,9 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
-import { BrowserRouter, MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { server } from '../mocks/server';
-import { mockUsers, validCredentials } from '../mocks/handlers';
 import { AppRoutes } from '../../App';
 import Login from '../../pages/Login';
 import Signup from '../../pages/Signup';
@@ -33,9 +32,7 @@ afterAll(() => server.close());
 const renderWithRouter = (component, { route = '/' } = {}) => {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <AuthProvider>
-        {component}
-      </AuthProvider>
+      <AuthProvider>{component}</AuthProvider>
     </MemoryRouter>
   );
 };
@@ -116,10 +113,10 @@ describe('Integration Tests - Login Flow', () => {
 
     await user.type(emailInput, 'john@example.com');
     await user.type(passwordInput, 'password123');
-    
+
     // Button should show "Login" initially
     expect(loginButton).toHaveTextContent('Login');
-    
+
     await user.click(loginButton);
 
     // Button should show loading text (may resolve quickly with MSW)
@@ -143,7 +140,6 @@ describe('Integration Tests - Signup Flow', () => {
     const emailInput = screen.getByTestId('email-input');
     const passwordInput = screen.getByTestId('password-input');
     const confirmPasswordInput = screen.getByTestId('confirm-password-input');
-    const signupButton = screen.getByTestId('signup-button');
 
     // Use a new email that doesn't exist in mock data
     await user.type(firstNameInput, 'New');
@@ -151,17 +147,20 @@ describe('Integration Tests - Signup Flow', () => {
     await user.type(emailInput, 'newuser@example.com');
     await user.type(passwordInput, 'newpassword123');
     await user.type(confirmPasswordInput, 'newpassword123');
-    
+
     // Submit form
     fireEvent.submit(screen.getByTestId('signup-form'));
 
     // Wait for loading state and then success (no error shown means success)
-    await waitFor(() => {
-      // Either token is set OR we navigated away (no signup form visible)
-      const token = localStorage.getItem('token');
-      const hasNoError = screen.queryByRole('alert') === null;
-      expect(token || hasNoError).toBeTruthy();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        // Either token is set OR we navigated away (no signup form visible)
+        const token = localStorage.getItem('token');
+        const hasNoError = screen.queryByRole('alert') === null;
+        expect(token || hasNoError).toBeTruthy();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('should show error when email already exists', async () => {
@@ -220,7 +219,9 @@ describe('Integration Tests - Signup Flow', () => {
     await user.click(signupButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('Password must be at least 6 characters long');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Password must be at least 6 characters long'
+      );
     });
   });
 
@@ -236,16 +237,19 @@ describe('Integration Tests - Signup Flow', () => {
     await user.type(emailInput, 'noname@example.com');
     await user.type(passwordInput, 'password123');
     await user.type(confirmPasswordInput, 'password123');
-    
+
     // Submit form
     fireEvent.submit(screen.getByTestId('signup-form'));
 
     // Wait for success (no error shown means success)
-    await waitFor(() => {
-      const token = localStorage.getItem('token');
-      const hasNoError = screen.queryByRole('alert') === null;
-      expect(token || hasNoError).toBeTruthy();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const token = localStorage.getItem('token');
+        const hasNoError = screen.queryByRole('alert') === null;
+        expect(token || hasNoError).toBeTruthy();
+      },
+      { timeout: 3000 }
+    );
   });
 });
 

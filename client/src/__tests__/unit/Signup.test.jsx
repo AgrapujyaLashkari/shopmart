@@ -1,7 +1,7 @@
 /**
  * Unit Tests for Signup Component
  * Testing Library: Vitest + React Testing Library
- * 
+ *
  * These tests verify:
  * - Component renders correctly
  * - Form elements are present and interactive
@@ -21,7 +21,7 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
-    useNavigate: () => mockNavigate,
+    useNavigate: () => mockNavigate
   };
 });
 
@@ -29,9 +29,7 @@ vi.mock('react-router-dom', async () => {
 const renderWithProviders = (component) => {
   return render(
     <BrowserRouter>
-      <AuthProvider>
-        {component}
-      </AuthProvider>
+      <AuthProvider>{component}</AuthProvider>
     </BrowserRouter>
   );
 };
@@ -45,27 +43,27 @@ describe('Signup Component - Unit Tests', () => {
   describe('Rendering', () => {
     it('should render signup form', () => {
       renderWithProviders(<Signup />);
-      
+
       expect(screen.getByText('Create an Account')).toBeInTheDocument();
     });
 
     it('should render first name input field', () => {
       renderWithProviders(<Signup />);
-      
+
       const firstNameInput = screen.getByTestId('firstname-input');
       expect(firstNameInput).toBeInTheDocument();
     });
 
     it('should render last name input field', () => {
       renderWithProviders(<Signup />);
-      
+
       const lastNameInput = screen.getByTestId('lastname-input');
       expect(lastNameInput).toBeInTheDocument();
     });
 
     it('should render email input field', () => {
       renderWithProviders(<Signup />);
-      
+
       const emailInput = screen.getByTestId('email-input');
       expect(emailInput).toBeInTheDocument();
       expect(emailInput).toHaveAttribute('type', 'email');
@@ -73,7 +71,7 @@ describe('Signup Component - Unit Tests', () => {
 
     it('should render password input field', () => {
       renderWithProviders(<Signup />);
-      
+
       const passwordInput = screen.getByTestId('password-input');
       expect(passwordInput).toBeInTheDocument();
       expect(passwordInput).toHaveAttribute('type', 'password');
@@ -81,7 +79,7 @@ describe('Signup Component - Unit Tests', () => {
 
     it('should render confirm password input field', () => {
       renderWithProviders(<Signup />);
-      
+
       const confirmPasswordInput = screen.getByTestId('confirm-password-input');
       expect(confirmPasswordInput).toBeInTheDocument();
       expect(confirmPasswordInput).toHaveAttribute('type', 'password');
@@ -89,7 +87,7 @@ describe('Signup Component - Unit Tests', () => {
 
     it('should render signup button', () => {
       renderWithProviders(<Signup />);
-      
+
       const signupButton = screen.getByTestId('signup-button');
       expect(signupButton).toBeInTheDocument();
       expect(signupButton).toHaveTextContent('Sign Up');
@@ -97,7 +95,7 @@ describe('Signup Component - Unit Tests', () => {
 
     it('should render login link', () => {
       renderWithProviders(<Signup />);
-      
+
       expect(screen.getByText('Already have an account?')).toBeInTheDocument();
       expect(screen.getByText('Login')).toBeInTheDocument();
     });
@@ -106,7 +104,7 @@ describe('Signup Component - Unit Tests', () => {
   describe('User Interactions', () => {
     it('should allow typing in all input fields', () => {
       renderWithProviders(<Signup />);
-      
+
       const firstNameInput = screen.getByTestId('firstname-input');
       const lastNameInput = screen.getByTestId('lastname-input');
       const emailInput = screen.getByTestId('email-input');
@@ -128,7 +126,7 @@ describe('Signup Component - Unit Tests', () => {
 
     it('should show error when passwords do not match', async () => {
       renderWithProviders(<Signup />);
-      
+
       const emailInput = screen.getByTestId('email-input');
       const passwordInput = screen.getByTestId('password-input');
       const confirmPasswordInput = screen.getByTestId('confirm-password-input');
@@ -145,7 +143,7 @@ describe('Signup Component - Unit Tests', () => {
 
     it('should show error when password is too short', async () => {
       renderWithProviders(<Signup />);
-      
+
       const emailInput = screen.getByTestId('email-input');
       const passwordInput = screen.getByTestId('password-input');
       const confirmPasswordInput = screen.getByTestId('confirm-password-input');
@@ -163,18 +161,19 @@ describe('Signup Component - Unit Tests', () => {
     it('should trigger form submission when button is clicked', async () => {
       global.fetch = vi.fn(() =>
         Promise.resolve({
-          json: () => Promise.resolve({ 
-            success: true, 
-            data: { 
-              user: { id: 1, email: 'john@example.com' }, 
-              token: 'mock-token' 
-            } 
-          })
+          json: () =>
+            Promise.resolve({
+              success: true,
+              data: {
+                user: { id: 1, email: 'john@example.com' },
+                token: 'mock-token'
+              }
+            })
         })
       );
 
       renderWithProviders(<Signup />);
-      
+
       const emailInput = screen.getByTestId('email-input');
       const passwordInput = screen.getByTestId('password-input');
       const confirmPasswordInput = screen.getByTestId('confirm-password-input');
@@ -191,15 +190,16 @@ describe('Signup Component - Unit Tests', () => {
     it('should display error when signup fails', async () => {
       global.fetch = vi.fn(() =>
         Promise.resolve({
-          json: () => Promise.resolve({ 
-            success: false, 
-            message: 'User with this email already exists' 
-          })
+          json: () =>
+            Promise.resolve({
+              success: false,
+              message: 'User with this email already exists'
+            })
         })
       );
 
       renderWithProviders(<Signup />);
-      
+
       const emailInput = screen.getByTestId('email-input');
       const passwordInput = screen.getByTestId('password-input');
       const confirmPasswordInput = screen.getByTestId('confirm-password-input');
@@ -218,7 +218,7 @@ describe('Signup Component - Unit Tests', () => {
       global.fetch = vi.fn(() => new Promise(() => {})); // Never resolves
 
       renderWithProviders(<Signup />);
-      
+
       const emailInput = screen.getByTestId('email-input');
       const passwordInput = screen.getByTestId('password-input');
       const confirmPasswordInput = screen.getByTestId('confirm-password-input');
@@ -236,31 +236,31 @@ describe('Signup Component - Unit Tests', () => {
   describe('Form Validation', () => {
     it('should have required attribute on email field', () => {
       renderWithProviders(<Signup />);
-      
+
       const emailInput = screen.getByTestId('email-input');
       expect(emailInput).toHaveAttribute('required');
     });
 
     it('should have required attribute on password field', () => {
       renderWithProviders(<Signup />);
-      
+
       const passwordInput = screen.getByTestId('password-input');
       expect(passwordInput).toHaveAttribute('required');
     });
 
     it('should have required attribute on confirm password field', () => {
       renderWithProviders(<Signup />);
-      
+
       const confirmPasswordInput = screen.getByTestId('confirm-password-input');
       expect(confirmPasswordInput).toHaveAttribute('required');
     });
 
     it('should NOT have required attribute on name fields', () => {
       renderWithProviders(<Signup />);
-      
+
       const firstNameInput = screen.getByTestId('firstname-input');
       const lastNameInput = screen.getByTestId('lastname-input');
-      
+
       expect(firstNameInput).not.toHaveAttribute('required');
       expect(lastNameInput).not.toHaveAttribute('required');
     });

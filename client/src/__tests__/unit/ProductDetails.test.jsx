@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ProductDetails from '../../pages/ProductDetails';
+import { CartProvider } from '../../context/CartContext';
+import { AuthProvider } from '../../context/AuthContext';
 
 describe('ProductDetails Component - Unit Tests', () => {
   beforeEach(() => {
@@ -13,9 +15,13 @@ describe('ProductDetails Component - Unit Tests', () => {
 
     render(
       <MemoryRouter initialEntries={['/products/p-101']}>
-        <Routes>
-          <Route path="/products/:id" element={<ProductDetails />} />
-        </Routes>
+        <AuthProvider>
+          <CartProvider>
+            <Routes>
+              <Route path="/products/:id" element={<ProductDetails />} />
+            </Routes>
+          </CartProvider>
+        </AuthProvider>
       </MemoryRouter>
     );
 
@@ -47,9 +53,13 @@ describe('ProductDetails Component - Unit Tests', () => {
 
     render(
       <MemoryRouter initialEntries={['/products/p-101']}>
-        <Routes>
-          <Route path="/products/:id" element={<ProductDetails />} />
-        </Routes>
+        <AuthProvider>
+          <CartProvider>
+            <Routes>
+              <Route path="/products/:id" element={<ProductDetails />} />
+            </Routes>
+          </CartProvider>
+        </AuthProvider>
       </MemoryRouter>
     );
 
@@ -72,9 +82,13 @@ describe('ProductDetails Component - Unit Tests', () => {
 
     render(
       <MemoryRouter initialEntries={['/products/unknown']}>
-        <Routes>
-          <Route path="/products/:id" element={<ProductDetails />} />
-        </Routes>
+        <AuthProvider>
+          <CartProvider>
+            <Routes>
+              <Route path="/products/:id" element={<ProductDetails />} />
+            </Routes>
+          </CartProvider>
+        </AuthProvider>
       </MemoryRouter>
     );
 

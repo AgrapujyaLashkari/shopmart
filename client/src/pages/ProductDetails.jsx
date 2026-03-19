@@ -1,12 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getProductById } from '../api/products';
+import { useCart } from '../context/CartContext';
 
 function ProductDetails() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cartMessage, setCartMessage] = useState('');
+  const { addToCart, cartCount } = useCart();
+
+  const handleAddToCart = async () => {
+    const result = await addToCart(product);
+    if (!result.success) {
+      setCartMessage(result.message || 'Could not update cart.');
+      setTimeout(() => setCartMessage(''), 2200);
+      return;
+    }
+
+    setCartMessage('Added to cart');
+    setTimeout(() => setCartMessage(''), 1800);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -61,6 +76,9 @@ function ProductDetails() {
       <Link to="/" className="back-link" data-testid="back-home-link">
         &lt;- Back to products
       </Link>
+      <p className="details-cart-pill">
+        Cart: {cartCount} item{cartCount === 1 ? '' : 's'}
+      </p>
       <article className="product-details-card" data-testid="product-details-card">
         <img src={product.image} alt={product.name} className="product-details-image" />
         <div className="product-details-content">
@@ -73,13 +91,14 @@ function ProductDetails() {
             <span>{product.stock} left in stock</span>
           </div>
           <div className="product-cta-row">
-            <button className="buy-button" type="button">
+            <button className="buy-button" type="button" onClick={handleAddToCart}>
               Add to Cart
             </button>
             <button className="wishlist-button" type="button">
               Save for Later
             </button>
           </div>
+          {cartMessage ? <p className="add-cart-feedback">{cartMessage}</p> : null}
           <p className="delivery-note">
             Delivery in 2-4 business days. Easy returns within 30 days.
           </p>

@@ -61,6 +61,23 @@ const generateMockToken = (userId, email) => {
   return `mock-jwt-token-${userId}-${email}-${Date.now()}`;
 };
 
+const cartByUser = new Map();
+
+function getUserIdFromAuthHeader(request) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token || !token.startsWith('mock-jwt-token-')) {
+    return null;
+  }
+
+  const tokenParts = token.split('-');
+  return parseInt(tokenParts[3]);
+}
+
 export const handlers = [
   // Health Check - using wildcard to match any origin
   http.get('*/api/health', () => {
@@ -98,6 +115,144 @@ export const handlers = [
       data: {
         product
       }
+    });
+  }),
+
+  http.get('*/api/cart', ({ request }) => {
+    const userId = getUserIdFromAuthHeader(request);
+
+    if (!userId) {
+      return HttpResponse.json(
+        {
+          success: false,
+          message: 'No token provided'
+        },
+        { status: 401 }
+      );
+    }
+
+    const userCart = cartByUser.get(userId) || [];
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        items: userCart
+      }
+    });
+  }),
+
+  http.post('*/api/cart/items', async ({ request }) => {
+    const userId = getUserIdFromAuthHeader(request);
+    if (!userId) {
+      return HttpResponse.json(
+        {
+          success: false,
+          message: 'No token provided'
+        },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { productId, quantity = 1 } = body;
+    const product = mockProducts.find((p) => p.id === productId);
+
+    if (!product) {
+      return HttpResponse.json(
+        {
+          success: false,
+          message: 'Product not found'
+        },
+        { status: 404 }
+      );
+    }
+
+    const current = cartByUser.get(userId) || [];
+    const existing = current.find((item) => item.id === productId);
+
+    if (existing) {
+      existing.quantity += Number(quantity);
+      cartByUser.set(userId, [...current]);
+    } else {
+      cartByUser.set(userId, [...current, { ...product, quantity: Number(quantity) }]);
+    }
+
+    return HttpResponse.json(
+      {
+        success: true,
+        message: 'Cart updated'
+      },
+      { status: 201 }
+    );
+  }),
+
+  http.patch('*/api/cart/items/:productId', async ({ request, params }) => {
+    const userId = getUserIdFromAuthHeader(request);
+    if (!userId) {
+      return HttpResponse.json(
+        {
+          success: false,
+          message: 'No token provided'
+        },
+        { status: 401 }
+      );
+    }
+
+    const quantity = Number((await request.json()).quantity);
+    const current = cartByUser.get(userId) || [];
+    const next = current
+      .map((item) => (item.id === params.productId ? { ...item, quantity } : item))
+      .filter((item) => item.quantity > 0);
+
+    cartByUser.set(userId, next);
+
+    return HttpResponse.json({
+      success: true,
+      message: 'Cart item updated'
+    });
+  }),
+
+  http.delete('*/api/cart/items/:productId', ({ request, params }) => {
+    const userId = getUserIdFromAuthHeader(request);
+    if (!userId) {
+      return HttpResponse.json(
+        {
+          success: false,
+          message: 'No token provided'
+        },
+        { status: 401 }
+      );
+    }
+
+    const current = cartByUser.get(userId) || [];
+    cartByUser.set(
+      userId,
+      current.filter((item) => item.id !== params.productId)
+    );
+
+    return HttpResponse.json({
+      success: true,
+      message: 'Item removed from cart'
+    });
+  }),
+
+  http.delete('*/api/cart', ({ request }) => {
+    const userId = getUserIdFromAuthHeader(request);
+    if (!userId) {
+      return HttpResponse.json(
+        {
+          success: false,
+          message: 'No token provided'
+        },
+        { status: 401 }
+      );
+    }
+
+    cartByUser.set(userId, []);
+
+    return HttpResponse.json({
+      success: true,
+      message: 'Cart cleared'
     });
   }),
 

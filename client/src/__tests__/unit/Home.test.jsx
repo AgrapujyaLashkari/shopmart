@@ -13,12 +13,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import Home from '../../pages/Home';
 import { AuthProvider } from '../../context/AuthContext';
+import { CartProvider } from '../../context/CartContext';
 
 // Helper function to render with providers
 const renderWithProviders = (component) => {
   return render(
     <BrowserRouter>
-      <AuthProvider>{component}</AuthProvider>
+      <AuthProvider>
+        <CartProvider>{component}</CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 };

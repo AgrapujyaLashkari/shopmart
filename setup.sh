@@ -1,13 +1,3 @@
-echo -e "\n${BLUE}📦 Checking Node.js installation...${NC}"
-echo -e "${GREEN}✅ Node.js $NODE_VERSION is installed${NC}"
-echo -e "${GREEN}✅ npm $NPM_VERSION is installed${NC}"
-echo -e "\n${BLUE}📦 Installing server dependencies...${NC}"
-echo -e "\n${BLUE}📦 Installing client dependencies...${NC}"
-echo -e "\n${BLUE}🔧 Setting up environment files...${NC}"
-echo -e "\n${BLUE}🗄️  Checking for Prisma setup...${NC}"
-echo -e "\n${BLUE}📁 Creating necessary directories...${NC}"
-echo -e "${GREEN}✅ Directories created${NC}"
-echo -e "\n=========================================="
 #!/usr/bin/env bash
 
 # ShopSmart Environment Setup Script (idempotent)

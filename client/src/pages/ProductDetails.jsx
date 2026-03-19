@@ -80,7 +80,9 @@ function ProductDetails() {
               Save for Later
             </button>
           </div>
-          <p className="delivery-note">Delivery in 2-4 business days. Easy returns within 30 days.</p>
+          <p className="delivery-note">
+            Delivery in 2-4 business days. Easy returns within 30 days.
+          </p>
         </div>
       </article>
     </main>

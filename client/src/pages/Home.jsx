@@ -57,7 +57,9 @@ function Home() {
 
       <section className="hero-shell" aria-label="hero">
         <p className="hero-kicker">Spring deals</p>
-        <p className="hero-subtitle">Discover quality tech products curated for your daily needs.</p>
+        <p className="hero-subtitle">
+          Discover quality tech products curated for your daily needs.
+        </p>
         <div className="hero-meta">
           <span>Free shipping over $50</span>
           <span>2-year warranty</span>

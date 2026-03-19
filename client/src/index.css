@@ -26,8 +26,7 @@ body {
   color: var(--ink);
   background:
     radial-gradient(800px 420px at 100% -5%, #d8eef9 0%, transparent 70%),
-    radial-gradient(620px 320px at 0% 8%, #d8f2e6 0%, transparent 60%),
-    var(--bg);
+    radial-gradient(620px 320px at 0% 8%, #d8f2e6 0%, transparent 60%), var(--bg);
 }
 
 #root {
@@ -146,7 +145,9 @@ p {
   background: #fff;
   display: flex;
   flex-direction: column;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .product-card:hover {

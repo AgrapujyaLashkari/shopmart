@@ -1,0 +1,16 @@
+client/node_modules
+client/dist
+server/node_modules
+server/coverage
+server/test-reports
+client/playwright-report
+client/test-results
+client/test-reports
+.git
+.github
+.terraform
+infra/terraform/.terraform
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+npm-debug.log
+.DS_Store

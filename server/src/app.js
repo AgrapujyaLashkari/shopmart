@@ -1,10 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const cartRoutes = require('./routes/cart');
 
 const app = express();
+const publicDir = path.resolve(__dirname, '../public');
 
 // Middleware
 app.use(cors());
@@ -28,9 +30,24 @@ app.use('/api/products', productRoutes);
 // Cart Routes
 app.use('/api/cart', cartRoutes);
 
-// Root Route (optional, just to show something)
-app.get('/', (req, res) => {
-  res.send('ShopSmart Backend Service');
+app.use(express.static(publicDir));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+
+  return res.sendFile(path.join(publicDir, 'index.html'), (error) => {
+    if (error) {
+      if (error.code === 'ENOENT') {
+        return res.send('ShopSmart Backend Service');
+      }
+
+      return next(error);
+    }
+
+    return undefined;
+  });
 });
 
 module.exports = app;

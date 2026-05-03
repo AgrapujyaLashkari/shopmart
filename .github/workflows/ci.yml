@@ -8,6 +8,19 @@ on:
     branches:
       - "**"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: shopsmart-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 20
+  TERRAFORM_VERSION: 1.14.8
+  TERRAFORM_DIR: infra/terraform
+  TF_IN_AUTOMATION: true
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -19,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Install and verify client
         working-directory: client
@@ -41,6 +54,17 @@ jobs:
           mkdir -p test-reports
           npm test -- --runInBand --watchman=false --json --outputFile=./test-reports/jest-report.json
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Validate Terraform
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,3 +73,216 @@ jobs:
           path: |
             client/test-reports/
             server/test-reports/
+
+  terraform-apply:
+    name: Terraform Apply
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    outputs:
+      app_ecr_repository_url: ${{ steps.tf_outputs.outputs.app_ecr_repository_url }}
+      ecs_cluster_name: ${{ steps.tf_outputs.outputs.ecs_cluster_name }}
+      ecs_service_name: ${{ steps.tf_outputs.outputs.ecs_service_name }}
+
+    env:
+      TF_VAR_aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      TF_VAR_project_name: ${{ vars.TF_PROJECT_NAME || 'shopsmart' }}
+      TF_VAR_environment: ${{ vars.TF_ENVIRONMENT || 'dev' }}
+      TF_VAR_bucket_name_prefix: ${{ vars.TF_BUCKET_NAME_PREFIX }}
+      TF_VAR_create_ecs_iam_roles: ${{ vars.TF_CREATE_ECS_IAM_ROLES || 'false' }}
+      TF_VAR_ecs_execution_role_arn: ${{ vars.TF_ECS_EXECUTION_ROLE_ARN }}
+      TF_VAR_ecs_task_role_arn: ${{ vars.TF_ECS_TASK_ROLE_ARN }}
+      TF_VAR_mysql_database_name: ${{ vars.TF_MYSQL_DATABASE_NAME || 'shopsmart' }}
+      TF_VAR_mysql_username: ${{ vars.TF_MYSQL_USERNAME || 'shopsmart' }}
+      TF_VAR_db_instance_class: ${{ vars.TF_DB_INSTANCE_CLASS || 'db.t3.micro' }}
+      TF_VAR_rds_multi_az: ${{ vars.TF_RDS_MULTI_AZ || 'false' }}
+      TF_VAR_ecs_cpu_architecture: ${{ vars.TF_ECS_CPU_ARCHITECTURE || 'ARM64' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ vars.TF_STATE_KEY }}" \
+            -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}" \
+            -backend-config="encrypt=true"
+
+      - name: Apply foundation infrastructure
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          terraform apply -input=false -auto-approve \
+            -target=aws_s3_bucket.app_bucket \
+            -target=aws_s3_bucket_versioning.app_bucket \
+            -target=aws_s3_bucket_server_side_encryption_configuration.app_bucket \
+            -target=aws_s3_bucket_public_access_block.app_bucket \
+            -target=aws_s3_bucket_ownership_controls.app_bucket \
+            -target=aws_ecr_repository.app \
+            -target=aws_ecr_lifecycle_policy.app \
+            -target=aws_vpc.app \
+            -target=aws_internet_gateway.app \
+            -target=aws_subnet.public \
+            -target=aws_subnet.private \
+            -target=aws_route_table.public \
+            -target=aws_route_table.private \
+            -target=aws_route_table_association.public \
+            -target=aws_route_table_association.private \
+            -target=aws_security_group.alb \
+            -target=aws_security_group.app \
+            -target=aws_security_group.rds \
+            -target=aws_db_subnet_group.app \
+            -target=random_password.db_password \
+            -target=aws_db_instance.app \
+            -target=aws_cloudwatch_log_group.ecs \
+            -target=aws_lb.app \
+            -target=aws_lb_target_group.app \
+            -target=aws_lb_listener.http \
+            -target=aws_ecs_cluster.app
+
+      - name: Capture Terraform outputs
+        id: tf_outputs
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          echo "app_ecr_repository_url=$(terraform output -raw app_ecr_repository_url)" >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster_name=$(terraform output -raw ecs_cluster_name)" >> "$GITHUB_OUTPUT"
+          echo "ecs_service_name=$(terraform output -raw ecs_service_name 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+
+  docker-build-and-push:
+    name: Docker Build & Push
+    needs: terraform-apply
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.image_meta.outputs.image_tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Derive Docker platform
+        id: docker_platform
+        run: |
+          ECS_ARCH="${{ vars.TF_ECS_CPU_ARCHITECTURE || 'ARM64' }}"
+          if [ "$ECS_ARCH" = "ARM64" ]; then
+            echo "platform=linux/arm64" >> "$GITHUB_OUTPUT"
+          else
+            echo "platform=linux/amd64" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set image tag
+        id: image_meta
+        run: |
+          echo "image_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push application image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: ${{ steps.docker_platform.outputs.platform }}
+          tags: |
+            ${{ needs.terraform-apply.outputs.app_ecr_repository_url }}:${{ steps.image_meta.outputs.image_tag }}
+            ${{ needs.terraform-apply.outputs.app_ecr_repository_url }}:latest
+
+  deploy-to-ecs:
+    name: Deploy to ECS
+    needs:
+      - terraform-apply
+      - docker-build-and-push
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VAR_aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      TF_VAR_project_name: ${{ vars.TF_PROJECT_NAME || 'shopsmart' }}
+      TF_VAR_environment: ${{ vars.TF_ENVIRONMENT || 'dev' }}
+      TF_VAR_bucket_name_prefix: ${{ vars.TF_BUCKET_NAME_PREFIX }}
+      TF_VAR_create_ecs_iam_roles: ${{ vars.TF_CREATE_ECS_IAM_ROLES || 'false' }}
+      TF_VAR_ecs_execution_role_arn: ${{ vars.TF_ECS_EXECUTION_ROLE_ARN }}
+      TF_VAR_ecs_task_role_arn: ${{ vars.TF_ECS_TASK_ROLE_ARN }}
+      TF_VAR_mysql_database_name: ${{ vars.TF_MYSQL_DATABASE_NAME || 'shopsmart' }}
+      TF_VAR_mysql_username: ${{ vars.TF_MYSQL_USERNAME || 'shopsmart' }}
+      TF_VAR_db_instance_class: ${{ vars.TF_DB_INSTANCE_CLASS || 'db.t3.micro' }}
+      TF_VAR_rds_multi_az: ${{ vars.TF_RDS_MULTI_AZ || 'false' }}
+      TF_VAR_ecs_cpu_architecture: ${{ vars.TF_ECS_CPU_ARCHITECTURE || 'ARM64' }}
+      TF_VAR_enable_ecs_deployment: "true"
+      TF_VAR_app_image_tag: ${{ needs.docker-build-and-push.outputs.image_tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ vars.TF_STATE_KEY }}" \
+            -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}" \
+            -backend-config="encrypt=true"
+
+      - name: Deploy application infrastructure
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          terraform apply -input=false -auto-approve
+
+      - name: Wait for ECS service to stabilize
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          ECS_CLUSTER_NAME="$(terraform output -raw ecs_cluster_name)"
+          ECS_SERVICE_NAME="$(terraform output -raw ecs_service_name)"
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER_NAME" \
+            --services "$ECS_SERVICE_NAME" \
+            --region "${{ vars.AWS_REGION || 'us-east-1' }}"
+
+      - name: Print deployment endpoint
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          echo "Application URL: http://$(terraform output -raw alb_dns_name)"

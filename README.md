@@ -30,6 +30,10 @@ ShopSmart is a full-stack web application with React on the frontend and Express
 	- Run ESLint
 	- Run Prettier check
 	- Run tests
+- Deployment sequence on pushes to the default branch:
+	- Terraform foundation apply
+	- Docker build and push to ECR
+	- Terraform deploy apply to update ECS
 
 ## Design Decisions
 
@@ -139,3 +143,89 @@ The ECS task definition now pins an explicit CPU architecture. Keep the ECR imag
 
 - `ecs_cpu_architecture = "ARM64"` -> build with `docker buildx build --platform linux/arm64`
 - `ecs_cpu_architecture = "X86_64"` -> build with `docker buildx build --platform linux/amd64`
+
+## GitHub Actions Setup
+
+The workflow now supports this order on pushes to the repository default branch:
+
+1. Push or PR triggers the workflow
+2. Run tests
+3. Terraform apply for foundation infrastructure
+4. Docker build and push to ECR
+5. Terraform apply for ECS deployment
+
+PRs run tests and Terraform validation only. AWS deployment jobs are gated to pushes on the default branch so infrastructure is not applied from every PR.
+
+### One-time state migration
+
+Before the workflow can manage your existing AWS resources, move Terraform state from your local machine to S3.
+
+From [infra/terraform](/Users/agrapujyalashkari/Desktop/DevOps%20Class/shopsmart/infra/terraform):
+
+```bash
+terraform init -migrate-state \
+  -backend-config="bucket=<tf-state-bucket>" \
+  -backend-config="key=<tf-state-key>" \
+  -backend-config="region=<aws-region>" \
+  -backend-config="encrypt=true"
+```
+
+For coursework, you can use the Phase 2 S3 bucket as the backend bucket if you already created it manually, though a separate backend bucket is cleaner.
+
+### GitHub Secrets
+
+Add these in GitHub: `Settings -> Secrets and variables -> Actions -> Secrets`
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_SESSION_TOKEN`
+
+Use `AWS_SESSION_TOKEN` only if your AWS credentials are temporary. If you are using an AWS Academy or voclabs account, the workflow will stop working when those temporary credentials expire. For a durable deployment workflow, use long-lived IAM credentials or an OIDC-based role.
+
+### GitHub Variables
+
+Add these in GitHub: `Settings -> Secrets and variables -> Actions -> Variables`
+
+- `AWS_REGION`
+  Use `us-east-1` for your current setup.
+- `TF_STATE_BUCKET`
+  The S3 bucket that stores Terraform state.
+- `TF_STATE_KEY`
+  Example: `terraform/shopsmart-dev.tfstate`
+- `TF_BUCKET_NAME_PREFIX`
+  Example: `shopsmart-agrapujya-dev`
+- `TF_ECS_EXECUTION_ROLE_ARN`
+  Example: `arn:aws:iam::871800143796:role/LabRole`
+- `TF_ECS_TASK_ROLE_ARN`
+  Example: `arn:aws:iam::871800143796:role/LabRole`
+
+Optional variables if you want to override defaults:
+
+- `TF_PROJECT_NAME`
+- `TF_ENVIRONMENT`
+- `TF_CREATE_ECS_IAM_ROLES`
+- `TF_MYSQL_DATABASE_NAME`
+- `TF_MYSQL_USERNAME`
+- `TF_DB_INSTANCE_CLASS`
+- `TF_RDS_MULTI_AZ`
+- `TF_ECS_CPU_ARCHITECTURE`
+
+Defaults used by the workflow when optional variables are not set:
+
+- project name: `shopsmart`
+- environment: `dev`
+- create ECS IAM roles: `false`
+- MySQL database: `shopsmart`
+- MySQL username: `shopsmart`
+- DB instance class: `db.t3.micro`
+- RDS multi AZ: `false`
+- ECS CPU architecture: `ARM64`
+
+### Terraform-generated secrets
+
+These are not stored in GitHub secrets right now:
+
+- RDS database password
+- ECS app JWT secret
+
+Terraform generates them with `random_password` and stores them in Terraform state. Because of that, protect the S3 backend bucket carefully.

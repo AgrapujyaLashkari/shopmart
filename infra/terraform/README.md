@@ -37,6 +37,31 @@ Keep the project workflow in this order:
 4. Docker build and push to ECR
 5. Terraform apply again for ECS deployment
 
+## GitHub Actions automation
+
+The repository workflow extends CI into deployment with this sequence on pushes to the default branch:
+
+1. Run tests
+2. Apply foundation Terraform resources
+3. Build and push the Docker image to ECR
+4. Apply Terraform again with `enable_ecs_deployment = true` and a commit-specific image tag
+
+PRs stop at tests and Terraform validation.
+
+### One-time remote state setup
+
+The workflow expects Terraform state to live in S3. Because your resources already exist from local applies, migrate local state once before using GitHub Actions:
+
+```bash
+terraform init -migrate-state \
+  -backend-config="bucket=<tf-state-bucket>" \
+  -backend-config="key=<tf-state-key>" \
+  -backend-config="region=<aws-region>" \
+  -backend-config="encrypt=true"
+```
+
+After migration, GitHub Actions and your local machine should both use the same backend config when applying changes.
+
 ## How to use
 
 1. Copy the example file:
@@ -139,7 +164,7 @@ aws rds describe-db-instances --db-instance-identifier shopsmart-dev-mysql
 
 ## Notes
 
-- The ECS deployment is manual by design and is not connected to the GitHub Actions workflow.
+- Manual deployment is still supported, and GitHub Actions can now automate the same Terraform plus ECR plus ECS flow after state is migrated to S3.
 - Local Docker Compose uses MySQL, while AWS uses RDS MySQL.
 - `docker-compose.yml` is needed for local development.
 - `docker-entrypoint.sh` is needed in both local and AWS runs because it applies Prisma migrations before starting the app.

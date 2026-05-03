@@ -1,0 +1,14 @@
+aws_region         = "ap-south-1"
+project_name       = "shopsmart"
+environment        = "dev"
+bucket_name_prefix = "shopsmart-agrapujya-dev"
+enable_ecs_deployment = false
+create_ecs_iam_roles  = false
+ecs_execution_role_arn = "arn:aws:iam::<account-id>:role/LabRole"
+ecs_task_role_arn      = "arn:aws:iam::<account-id>:role/LabRole"
+app_image_tag         = "latest"
+ecs_cpu_architecture  = "ARM64"
+mysql_database_name   = "shopsmart"
+mysql_username        = "shopsmart"
+db_instance_class     = "db.t3.micro"
+rds_multi_az          = false

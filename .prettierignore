@@ -3,5 +3,7 @@ dist
 coverage
 client/playwright-report
 client/test-results
+client/test-reports
+server/test-reports
 server/prisma/dev.db
 server/prisma/dev.db-journal

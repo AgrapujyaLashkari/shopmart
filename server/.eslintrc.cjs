@@ -9,5 +9,5 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest'
   },
-  ignorePatterns: ['node_modules', 'coverage', 'prisma/generated']
+  ignorePatterns: ['node_modules', 'coverage', 'prisma/generated', 'test-reports']
 };

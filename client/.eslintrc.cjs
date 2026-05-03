@@ -27,5 +27,12 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off'
   },
-  ignorePatterns: ['dist', 'coverage', 'node_modules']
+  ignorePatterns: [
+    'dist',
+    'coverage',
+    'node_modules',
+    'playwright-report',
+    'test-results',
+    'test-reports'
+  ]
 };

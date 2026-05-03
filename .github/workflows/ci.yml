@@ -27,12 +27,25 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npm run lint
           npm run format:check
-          npm run test -- --run
+          mkdir -p test-reports
+          npm run test:unit -- --reporter=default --reporter=junit --outputFile=./test-reports/unit-junit.xml
+          npm run test:integration -- --reporter=default --reporter=junit --outputFile=./test-reports/integration-junit.xml
 
       - name: Install and verify server
         working-directory: server
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm run db:generate
           npm run lint
           npm run format:check
-          npm test
+          mkdir -p test-reports
+          npm test -- --runInBand --watchman=false --json --outputFile=./test-reports/jest-report.json
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            client/test-reports/
+            server/test-reports/

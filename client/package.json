@@ -11,8 +11,8 @@
     "format:check": "prettier --check .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:unit": "vitest run --testPathPattern=unit",
-    "test:integration": "vitest run --testPathPattern=integration",
+    "test:unit": "vitest run src/__tests__/unit",
+    "test:integration": "vitest run src/__tests__/integration",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
@@ -28,7 +28,7 @@
     "@testing-library/user-event": "^14.5.2",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
+    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.34.1",
@@ -37,7 +37,7 @@
     "jsdom": "^24.0.0",
     "msw": "^2.2.0",
     "prettier": "^3.3.3",
-    "vite": "^5.4.21",
-    "vitest": "^1.5.0"
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
   }
 }

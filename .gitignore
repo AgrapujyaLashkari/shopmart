@@ -7,3 +7,5 @@ coverage
 .vercel
 client/playwright-report/
 client/test-results/
+client/test-reports/
+server/test-reports/
